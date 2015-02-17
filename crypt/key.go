@@ -3,12 +3,46 @@ package crypt
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 )
 
 type Key struct {
 	Name    string
 	Public  *rsa.PublicKey
 	Private *rsa.PrivateKey
+}
+
+func (key *Key) PublicPem() []byte {
+	der, err := x509.MarshalPKIXPublicKey(key.Public)
+
+	// normally MarshalPKIXPublicKey doesn't say error for rsa.PublicKey
+	if err != nil {
+		panic(err)
+	}
+
+	block := &pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: map[string]string{"Name": key.Name},
+		Bytes:   der,
+	}
+
+	return pem.EncodeToMemory(block)
+}
+
+func (key *Key) PrivatePem() []byte {
+	if key.Private == nil {
+		return nil
+	}
+
+	der := x509.MarshalPKCS1PrivateKey(key.Private)
+	block := &pem.Block{
+		Type:    "PRIVATE KEY",
+		Headers: map[string]string{"Name": key.Name},
+		Bytes:   der,
+	}
+
+	return pem.EncodeToMemory(block)
 }
 
 func NewPrivateKey(name string, rsaPrivateKey *rsa.PrivateKey) *Key {
