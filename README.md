@@ -1,5 +1,7 @@
 # etcvault - proxy for etcd, adding transparent encryption
 
+Still in development phase, so doesn't work. Stay tuned!
+
 ## Features
 
 - works as reverse proxy to etcd
