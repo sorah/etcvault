@@ -13,6 +13,31 @@ type Key struct {
 	Private *rsa.PrivateKey
 }
 
+func NewPrivateKey(name string, rsaPrivateKey *rsa.PrivateKey) *Key {
+	pubKey := rsaPrivateKey.Public().(*rsa.PublicKey)
+	return &Key{
+		Name:    name,
+		Public:  pubKey,
+		Private: rsaPrivateKey,
+	}
+}
+
+func NewPublicKey(name string, rsaPublicKey *rsa.PublicKey) *Key {
+	return &Key{
+		Name:   name,
+		Public: rsaPublicKey,
+	}
+}
+
+func GenerateKey(name string, bits int) (*Key, error) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, bits)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewPrivateKey(name, rsaKey), nil
+}
+
 func (key *Key) PublicPem() []byte {
 	der, err := x509.MarshalPKIXPublicKey(key.Public)
 
@@ -43,29 +68,4 @@ func (key *Key) PrivatePem() []byte {
 	}
 
 	return pem.EncodeToMemory(block)
-}
-
-func NewPrivateKey(name string, rsaPrivateKey *rsa.PrivateKey) *Key {
-	pubKey := rsaPrivateKey.Public().(*rsa.PublicKey)
-	return &Key{
-		Name:    name,
-		Public:  pubKey,
-		Private: rsaPrivateKey,
-	}
-}
-
-func NewPublicKey(name string, rsaPublicKey *rsa.PublicKey) *Key {
-	return &Key{
-		Name:   name,
-		Public: rsaPublicKey,
-	}
-}
-
-func GenerateKey(name string, bits int) (*Key, error) {
-	rsaKey, err := rsa.GenerateKey(rand.Reader, bits)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewPrivateKey(name, rsaKey), nil
 }
