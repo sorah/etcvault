@@ -10,6 +10,8 @@ import (
 )
 
 var testRsaPrivateKey = []byte(`-----BEGIN RSA PRIVATE KEY-----
+Name: the-key
+
 MIICXAIBAAKBgQDE0H3AjeUvlOA5ueZ1q6hukF+aRFbW2h8qW2OIw88+EN4qLani
 lTvTUO3V91hGhHe2CnnUOey1iAHnSPGx66XW3oN/Wuk+wK1tg1ivcCLHIOlRu22g
 8DuS8TC92jhjkFVCgGasXNFGECiyF6J9WsYrF6F/OKvUVpEjWgyRMPMMuQIDAQAB
@@ -26,6 +28,31 @@ LUu9LpYOrkcaL1d7SFPhWZUsI+crYKuLAb9tXG/AnJY=
 -----END RSA PRIVATE KEY-----`)
 
 var testRsaPublicKey = []byte(`-----BEGIN RSA PUBLIC KEY-----
+Name: the-key
+
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDE0H3AjeUvlOA5ueZ1q6hukF+a
+RFbW2h8qW2OIw88+EN4qLanilTvTUO3V91hGhHe2CnnUOey1iAHnSPGx66XW3oN/
+Wuk+wK1tg1ivcCLHIOlRu22g8DuS8TC92jhjkFVCgGasXNFGECiyF6J9WsYrF6F/
+OKvUVpEjWgyRMPMMuQIDAQAB
+-----END RSA PUBLIC KEY-----`)
+
+var testRsaPrivateKeyNoHeader = []byte(`-----BEGIN RSA PRIVATE KEY-----
+MIICXAIBAAKBgQDE0H3AjeUvlOA5ueZ1q6hukF+aRFbW2h8qW2OIw88+EN4qLani
+lTvTUO3V91hGhHe2CnnUOey1iAHnSPGx66XW3oN/Wuk+wK1tg1ivcCLHIOlRu22g
+8DuS8TC92jhjkFVCgGasXNFGECiyF6J9WsYrF6F/OKvUVpEjWgyRMPMMuQIDAQAB
+AoGAMOlbhyH8ZhHKk64GfxHU/v00NSNsrWJxwlYJ63A2LceFXtgQUzYhMwf2w2j/
+8C51jbEWy85FbGvLhU4UetIEWW0OK5Y+J2juGD0ez1FX+EzmiO+khpGtYQ6OY56a
+3g4FPsUuCj1gw2oBDDQ2e38RyqY9Nj3PWo4H5Y7ZbSWwSQ0CQQDSNABnC7AiM2K3
+5uXqZiXx68RoLrYtGkXhgyZBIUZ+g6nbhBqpPEI9pql55yCjmx/zeY6VVipOffO2
+EEUpdnG/AkEA77G9SK8lqxMeH+GRL70jYNXBqdxYhKrWlFzom+VrHIyo//limocH
+dPJiEEIyPJQXeru2r2mWxVg98q+j3CUvhwJAIzebKaiHpfM+Atmog5EBonqBuYK5
++ux/8LxsWFUe3mtoteJ4JQp3fqTBmC7lBQQkYkJnZRW+mM/5WPN44u15OQJBAJPO
+Wbehcav9vPzR3vK+QjurdKHnI5qjsnCInlPL8/IF9wzp3tkFXR7LfJckCtB6TcQ8
+Ttn6VaPZ11F456WQNK8CQETVQARcp/v4bWtVHfJKyBcx92FkclVNXae5aHpmvIjI
+LUu9LpYOrkcaL1d7SFPhWZUsI+crYKuLAb9tXG/AnJY=
+-----END RSA PRIVATE KEY-----`)
+
+var testRsaPublicKeyNoHeader = []byte(`-----BEGIN RSA PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDE0H3AjeUvlOA5ueZ1q6hukF+a
 RFbW2h8qW2OIw88+EN4qLanilTvTUO3V91hGhHe2CnnUOey1iAHnSPGx66XW3oN/
 Wuk+wK1tg1ivcCLHIOlRu22g8DuS8TC92jhjkFVCgGasXNFGECiyF6J9WsYrF6F/
@@ -93,13 +120,33 @@ func TestNewPublicKey(t *testing.T) {
 }
 
 func TestLoadKeyPublic(t *testing.T) {
-	key, err := LoadKey("foo", testRsaPublicKey)
+	key, err := LoadKey(testRsaPublicKey)
 
 	if err != nil {
 		t.Errorf("error %#v", err)
 	}
 
-	if key.Name != "foo" {
+	if key.Name != "the-key" {
+		t.Errorf("unexpected key.Name %#v", key.Name)
+	}
+
+	if key.Private != nil {
+		t.Errorf("unexpected key.Private %#v", key.Private)
+	}
+
+	if key.Public.E != rsaKey.Public().(*rsa.PublicKey).E {
+		t.Errorf("unexpected key.Public", key.Public)
+	}
+}
+
+func TestLoadKeyPublicNoHeader(t *testing.T) {
+	key, err := LoadKey(testRsaPublicKeyNoHeader)
+
+	if err != nil {
+		t.Errorf("error %#v", err)
+	}
+
+	if key.Name != "" {
 		t.Errorf("unexpected key.Name %#v", key.Name)
 	}
 
@@ -113,7 +160,7 @@ func TestLoadKeyPublic(t *testing.T) {
 }
 
 func TestLoadKeyPublicButNotRsa(t *testing.T) {
-	key, err := LoadKey("foo", testEcdsaPublicKey)
+	key, err := LoadKey(testEcdsaPublicKey)
 
 	if err != ErrNotRsaKey {
 		t.Errorf("unexpected error %#v", err)
@@ -126,7 +173,7 @@ func TestLoadKeyPublicButNotRsa(t *testing.T) {
 
 func TestLoadKeyPublicButInvalid(t *testing.T) {
 	// broken
-	key, err := LoadKey("foo", []byte(`-----BEGIN RSA PUBLIC KEY-----
+	key, err := LoadKey([]byte(`-----BEGIN RSA PUBLIC KEY-----
 Wbehcav9vPzR3vK+QjurdKHnI5qjsnCInlPL8/IF9wzp3tkFXR7LfJckCtB6TcQ8
 Ttn6VaPZ11F456WQNK8CQETVQARcp/v4bWtVHfJKyBcx92FkclVNXae5aHpmvIjI
 LUu9LpYOrkcaL1d7SFPhWZUsI+crYKuLAb9tXG/AnJY=
@@ -142,13 +189,33 @@ LUu9LpYOrkcaL1d7SFPhWZUsI+crYKuLAb9tXG/AnJY=
 }
 
 func TestLoadKeyPrivate(t *testing.T) {
-	key, err := LoadKey("foo", testRsaPrivateKey)
+	key, err := LoadKey(testRsaPrivateKey)
 
 	if err != nil {
 		t.Errorf("error %#v", err)
 	}
 
-	if key.Name != "foo" {
+	if key.Name != "the-key" {
+		t.Errorf("unexpected key.Name %#v", key.Name)
+	}
+
+	if key.Private == nil {
+		t.Errorf("unexpected key.Private %#v", key.Private)
+	}
+
+	if key.Private.E != rsaKey.E {
+		t.Errorf("unexpected key.Private %#v", key.Private)
+	}
+}
+
+func TestLoadKeyPrivateNoHeader(t *testing.T) {
+	key, err := LoadKey(testRsaPrivateKeyNoHeader)
+
+	if err != nil {
+		t.Errorf("error %#v", err)
+	}
+
+	if key.Name != "" {
 		t.Errorf("unexpected key.Name %#v", key.Name)
 	}
 
@@ -163,7 +230,7 @@ func TestLoadKeyPrivate(t *testing.T) {
 
 func TestLoadKeyPrivateButInvalid(t *testing.T) {
 	// broken
-	key, err := LoadKey("foo", []byte(`-----BEGIN RSA PRIVATE KEY-----
+	key, err := LoadKey([]byte(`-----BEGIN RSA PRIVATE KEY-----
 GSIb3DQEBAQUAA4GNADCBiQKBgQDE0H3AjeUvlOA5ueZ1q6hukF+aRFbW2h8qW2O
 Iw88+EN4qLanilTvTUO3V91hGhHe2CnnUOey1iAHnSPGx66XW3oNWuk+wK1tg1iv
 cCLHIOlRu22g8DuS8TC92jhjkFVCgGasXNFGECiyF6J9WsYrF6FOKvUVpEjWgyRM
@@ -180,7 +247,7 @@ PMMuQIDAQAB
 }
 
 func TestLoadKeyMissing(t *testing.T) {
-	key, err := LoadKey("foo", []byte{})
+	key, err := LoadKey([]byte{})
 
 	if err != ErrMissingPem {
 		t.Errorf("unexpected error %#v", err)
@@ -192,7 +259,7 @@ func TestLoadKeyMissing(t *testing.T) {
 }
 
 func TestLoadKeyInvalid(t *testing.T) {
-	key, err := LoadKey("foo", []byte(`-----BEGIN SOMETHING KEY-----
+	key, err := LoadKey([]byte(`-----BEGIN SOMETHING KEY-----
 PMMuQIDAQAB
 -----END SOMETHING KEY-----`))
 	if err != ErrMissingPem {

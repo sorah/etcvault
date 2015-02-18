@@ -34,11 +34,13 @@ func NewPublicKey(name string, rsaPublicKey *rsa.PublicKey) *Key {
 	}
 }
 
-func LoadKey(name string, pemBytes []byte) (*Key, error) {
+func LoadKey(pemBytes []byte) (*Key, error) {
 	pem, _ := pem.Decode(pemBytes)
 	if pem == nil {
 		return nil, ErrMissingPem
 	}
+
+	name := pem.Headers["Name"]
 
 	switch pem.Type {
 	case "PUBLIC KEY", "RSA PUBLIC KEY":
