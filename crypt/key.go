@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"io/ioutil"
 )
 
 var ErrMissingPem = errors.New("invalid pem (couldn't decode)")
@@ -68,6 +69,15 @@ func LoadKey(pemBytes []byte) (*Key, error) {
 	default:
 		return nil, ErrInvalidPem
 	}
+}
+
+func LoadKeyFromFile(path string) (*Key, error) {
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadKey(bytes)
 }
 
 func GenerateKey(name string, bits int) (*Key, error) {
