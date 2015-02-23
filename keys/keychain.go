@@ -1,4 +1,4 @@
-package crypt
+package keys
 
 import (
 	"errors"
