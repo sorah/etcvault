@@ -5,12 +5,12 @@ import (
 	"strings"
 )
 
-type BasicContainer struct {
+type Basic struct {
 	Version string
 	Content string
 }
 
-func ParseBasic(str string) (*BasicContainer, error) {
+func ParseBasic(str string) (*Basic, error) {
 	// ETCVAULT:::::ETCVAULT (at least 21 chars)
 	if len(str) < 21 {
 		return nil, ErrInvalid
@@ -25,12 +25,12 @@ func ParseBasic(str string) (*BasicContainer, error) {
 		return nil, ErrParse
 	}
 
-	return &BasicContainer{
+	return &Basic{
 		Version: versionAndContent[0],
 		Content: versionAndContent[1],
 	}, nil
 }
 
-func (container *BasicContainer) String() string {
+func (container *Basic) String() string {
 	return fmt.Sprintf("ETCVAULT::%s:%s::ETCVAULT", container.Version, container.Content)
 }
