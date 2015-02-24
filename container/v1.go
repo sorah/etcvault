@@ -40,8 +40,6 @@ func ParseV1(str string) (*V1, error) {
 			return nil, ErrParse
 		}
 
-		var err error
-
 		contentKey, err = base64.StdEncoding.DecodeString(contentKeyAndContent[0])
 		if err != nil {
 			return nil, err
