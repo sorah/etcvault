@@ -6,7 +6,6 @@ import (
 )
 
 type V1 struct {
-	Version    string
 	KeyName    string
 	ContentKey []byte
 	Content    []byte
@@ -57,9 +56,12 @@ func ParseV1(str string) (*V1, error) {
 	}
 
 	return &V1{
-		Version:    basic.Version,
 		KeyName:    keyName,
 		ContentKey: contentKey,
 		Content:    content,
 	}, nil
+}
+
+func (container *V1) Version() string {
+	return "1"
 }

@@ -12,8 +12,8 @@ func TestV1ParseShort(t *testing.T) {
 		t.Errorf("unexpected error %#v", err)
 	}
 
-	if result.Version != "1" {
-		t.Errorf("unexpected Version %#v", result.Version)
+	if result.Version() != "1" {
+		t.Errorf("unexpected version %#v", result.Version())
 	}
 
 	if result.KeyName != "key" {
@@ -36,8 +36,8 @@ func TestV1ParseLong(t *testing.T) {
 		t.Errorf("unexpected error %#v", err)
 	}
 
-	if result.Version != "1" {
-		t.Errorf("unexpected Version %#v", result.Version)
+	if result.Version() != "1" {
+		t.Errorf("unexpected version %#v", result.Version())
 	}
 
 	if result.KeyName != "key" {
