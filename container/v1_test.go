@@ -85,3 +85,30 @@ func TestV1ParseNotV1(t *testing.T) {
 		t.Errorf("unexpected error %#v", err)
 	}
 }
+
+func TestV1StringShort(t *testing.T) {
+	container := &V1{
+		KeyName: "key",
+		Content: []byte("hello"),
+	}
+
+	result := container.String()
+
+	if result != "ETCVAULT::1:key::aGVsbG8=::ETCVAULT" {
+		t.Errorf("unexpected string %#v", result)
+	}
+}
+
+func TestV1StringLong(t *testing.T) {
+	container := &V1{
+		KeyName:    "key",
+		ContentKey: []byte("hola"),
+		Content:    []byte("hello"),
+	}
+
+	result := container.String()
+
+	if result != "ETCVAULT::1:key:long:aG9sYQ==,aGVsbG8=::ETCVAULT" {
+		t.Errorf("unexpected string %#v", result)
+	}
+}

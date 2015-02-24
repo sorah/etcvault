@@ -2,6 +2,7 @@ package container
 
 import (
 	"encoding/base64"
+	"fmt"
 	"strings"
 )
 
@@ -64,4 +65,14 @@ func ParseV1(str string) (*V1, error) {
 
 func (container *V1) Version() string {
 	return "1"
+}
+
+func (container *V1) String() string {
+	encodedContent := base64.StdEncoding.EncodeToString(container.Content)
+	if container.ContentKey == nil {
+		return fmt.Sprintf("ETCVAULT::1:%s::%s::ETCVAULT", container.KeyName, encodedContent)
+	} else {
+		encodedContentKey := base64.StdEncoding.EncodeToString(container.ContentKey)
+		return fmt.Sprintf("ETCVAULT::1:%s:long:%s,%s::ETCVAULT", container.KeyName, encodedContentKey, encodedContent)
+	}
 }
