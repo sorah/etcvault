@@ -21,6 +21,8 @@ type Key struct {
 
 func NewPrivateKey(name string, rsaPrivateKey *rsa.PrivateKey) *Key {
 	pubKey := rsaPrivateKey.Public().(*rsa.PublicKey)
+	rsaPrivateKey.Precompute()
+
 	return &Key{
 		Name:    name,
 		Public:  pubKey,
