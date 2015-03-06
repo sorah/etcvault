@@ -13,6 +13,8 @@ func Parse(str string) (Container, error) {
 	}
 
 	switch basic.Version {
+	case "asis":
+		return ParseAsis(str)
 	case "1":
 		return ParseV1(str)
 	case "plain1", "plain":
