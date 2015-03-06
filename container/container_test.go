@@ -59,6 +59,27 @@ func TestParseForPlain1(t *testing.T) {
 	}
 }
 
+func TestParseForAsis(t *testing.T) {
+	rawResult, err := Parse("ETCVAULT::asis:helo::ETCVAULT")
+
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
+
+	result, ok := rawResult.(*Asis)
+	if !ok {
+		t.Errorf("Asis has not returned")
+	}
+
+	if result.Version() != "asis" {
+		t.Errorf("unexpected version %#v", result.Version())
+	}
+
+	if result.Content != "helo" {
+		t.Errorf("unexpected Content %#v", result.Content)
+	}
+}
+
 func TestParseForUnknown(t *testing.T) {
 	result, err := Parse("ETCVAULT::unknown:XXX::ETCVAULT")
 

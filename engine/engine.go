@@ -38,6 +38,8 @@ func (engine *Engine) Transform(text string) (string, error) {
 	switch c := rawContainer.(type) {
 	case *container.Plain1:
 		return engine.TransformPlain1(c)
+	case *container.Asis:
+		return engine.TransformAsis(c)
 	case *container.V1:
 		return engine.TransformV1(c)
 	}
@@ -65,6 +67,10 @@ func (engine *Engine) TransformPlain1(c *container.Plain1) (string, error) {
 	}
 
 	return result.String(), nil
+}
+
+func (engine *Engine) TransformAsis(c *container.Asis) (string, error) {
+	return c.Content, nil
 }
 
 func (engine *Engine) transformPlain1Long(key *keys.Key, c *container.Plain1) (string, error) {
