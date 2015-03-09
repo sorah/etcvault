@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"reflect"
 	"testing"
 )
 
@@ -114,5 +115,99 @@ func TestKeychainFindUnexist(t *testing.T) {
 	_, err := keychain.Find("the-key")
 	if err != ErrKeyNotFound {
 		t.Errorf("unexpected error %#v", err)
+	}
+}
+
+func TestKeychainSavePrivateKey(t *testing.T) {
+	keychain := GetKeychain()
+	defer DestroyKeychain(keychain)
+
+	key, err := LoadKey(testRsaPrivateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	key.Name = "new-key"
+
+	err = keychain.Save(key)
+
+	if err != nil {
+		t.Errorf("unexpected error %#v", err.Error())
+	}
+
+	filepath := path.Join(keychain.Path, "new-key.pem")
+
+	if fi, err := os.Stat(filepath); err == nil {
+		if fi.Mode() != 0600 {
+			t.Errorf("unexpected file mode %i", fi.Mode())
+		}
+	} else {
+		t.Errorf("expected file stat fail:", err.Error())
+	}
+
+	bytes, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		t.Errorf("failed to read file %s", err.Error())
+	}
+
+	if !reflect.DeepEqual(key.PrivatePem(), bytes) {
+		t.Errorf("key file content unexpected %#v", bytes)
+	}
+}
+
+func TestKeychainSavePublicKey(t *testing.T) {
+	keychain := GetKeychain()
+	defer DestroyKeychain(keychain)
+
+	key, err := LoadKey(testRsaPublicKey)
+	if err != nil {
+		panic(err)
+	}
+
+	key.Name = "new-key"
+
+	err = keychain.Save(key)
+
+	if err != nil {
+		t.Errorf("unexpected error %#v", err.Error())
+	}
+
+	filepath := path.Join(keychain.Path, "new-key.pub")
+
+	if _, err := os.Stat(filepath); err != nil {
+		t.Errorf("expected file stat fail:", err.Error())
+	}
+
+	bytes, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		t.Errorf("failed to read file %s", err.Error())
+	}
+
+	if !reflect.DeepEqual(key.PublicPem(), bytes) {
+		t.Errorf("key file content unexpected %#v", bytes)
+	}
+}
+
+func TestKeychainSaveAlreadyExist(t *testing.T) {
+	keychain := GetKeychain()
+	defer DestroyKeychain(keychain)
+
+	if err := ioutil.WriteFile(path.Join(keychain.Path, "the-key.pem"), testRsaPrivateKey, 0600); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile(path.Join(keychain.Path, "the-key.pub"), testRsaPublicKey, 0644); err != nil {
+		panic(err)
+	}
+
+	key, err := LoadKey(testRsaPrivateKey)
+	if err != nil {
+		panic(err)
+	}
+	key.Name = "the-key"
+
+	err = keychain.Save(key)
+
+	if err != ErrKeyAlreadyExists {
+		t.Errorf("unexpected error %#v", err.Error())
 	}
 }
