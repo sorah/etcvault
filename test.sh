@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PKGS="./keys ./container ./engine"
+PKGS="./keys ./container ./engine ./proxy"
 FORMATS="$PKGS *.go"
 
 for pkg in $PKGS; do
