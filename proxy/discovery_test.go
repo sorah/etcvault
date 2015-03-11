@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func membersMock(count int, peer bool) *httptest.Server {
+func membersMock(count int, peer bool) (*httptest.Server, *http.Transport) {
 	type memberT struct {
 		ClientURLs []string
 		PeerURLs   []string
@@ -57,21 +57,21 @@ func membersMock(count int, peer bool) *httptest.Server {
 		}
 	}))
 
-	return server
+	transport := &http.Transport{
+		Proxy: func(req *http.Request) (*url.URL, error) {
+			u, _ := url.Parse(server.URL)
+			return u, nil
+		},
+	}
+
+	return server, transport
 }
 
 // ----
 
 func TestDiscoverBackendsFromEtcd(t *testing.T) {
-	testServer := membersMock(3, false)
+	testServer, transport := membersMock(3, false)
 	defer testServer.Close()
-
-	transport := &http.Transport{
-		Proxy: func(req *http.Request) (*url.URL, error) {
-			u, _ := url.Parse(testServer.URL)
-			return u, nil
-		},
-	}
 
 	u, err := url.Parse("http://node:2379")
 	if err != nil {
@@ -101,15 +101,8 @@ func TestDiscoverBackendsFromEtcd(t *testing.T) {
 }
 
 func TestDiscoverBackendsFromEtcdPeer(t *testing.T) {
-	testServer := membersMock(3, true)
+	testServer, transport := membersMock(3, true)
 	defer testServer.Close()
-
-	transport := &http.Transport{
-		Proxy: func(req *http.Request) (*url.URL, error) {
-			u, _ := url.Parse(testServer.URL)
-			return u, nil
-		},
-	}
 
 	u, err := url.Parse("http://node:2380")
 	if err != nil {
@@ -139,7 +132,7 @@ func TestDiscoverBackendsFromEtcdPeer(t *testing.T) {
 }
 
 func TestDiscoverBackendsFromDns(t *testing.T) {
-	testServer := membersMock(3, true)
+	testServer, transport := membersMock(3, true)
 	defer testServer.Close()
 
 	lookupSRV = func(service, proto, name string) (string, []*net.SRV, error) {
@@ -156,13 +149,6 @@ func TestDiscoverBackendsFromDns(t *testing.T) {
 		return "", []*net.SRV{}, &net.DNSError{Err: "no such host", Name: "", Server: "", IsTimeout: false}
 	}
 	defer func() { lookupSRV = net.LookupSRV }()
-
-	transport := &http.Transport{
-		Proxy: func(req *http.Request) (*url.URL, error) {
-			u, _ := url.Parse(testServer.URL)
-			return u, nil
-		},
-	}
 
 	backends, err := DiscoverBackendsFromDns(transport, "example.org")
 
