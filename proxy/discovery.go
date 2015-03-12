@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -70,6 +71,7 @@ func fetchBackendsFromEtcd(transport *http.Transport, urls []*url.URL, path stri
 
 		resp, err := client.Get(u.String())
 		if err != nil {
+			log.Printf("error when retrieving %s: %s", u.String(), err.Error())
 			continue
 		}
 
