@@ -14,6 +14,11 @@ import (
 var ErrNoPrivateKey = errors.New("no private key provided")
 var ErrTooShortKey = errors.New("key too short; couldn't generate 16, 24, and 32 bytes aes key")
 
+type Transformable interface {
+	Transform(text string) (string, error)
+	TransformEtcdJsonResponse(jsonData []byte) ([]byte, error)
+}
+
 type Engine struct {
 	Keychain *keys.Keychain
 }
