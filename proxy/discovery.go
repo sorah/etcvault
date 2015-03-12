@@ -104,6 +104,7 @@ func fetchBackendsFromEtcd(transport *http.Transport, urls []*url.URL, path stri
 		members := &etcdMembers{}
 		err = json.Unmarshal(respBody, members)
 		if err != nil {
+			log.Printf("error when parsing response from %s: %s", u.String(), err.Error())
 			continue
 		}
 
