@@ -25,14 +25,23 @@ type etcdMembers struct {
 }
 
 func DiscoverBackendsFromDns(transport *http.Transport, domain string) ([]*Backend, error) {
-	_, records, err := lookupSRV("etcd-server", "tcp", domain)
-
-	if err != nil {
-		return nil, err
+	_, records, errA := lookupSRV("etcd-server", "tcp", domain)
+	if errA != nil {
+		log.Printf("error when looking up _etcd-server._tcp.%s: %s", domain, errA.Error())
 	}
 
-	urls := make([]*url.URL, 0, len(records))
-	for _, srv := range records {
+	_, ssl_records, errB := lookupSRV("etcd-server-ssl", "tcp", domain)
+	if errB != nil {
+		log.Printf("error when looking up _etcd-server-ssl._tcp.%s: %s", domain, errB.Error())
+	}
+
+	if errA != nil && errB != nil {
+		return nil, errA
+	}
+
+	urls := make([]*url.URL, 0, len(records)+len(ssl_records))
+
+	makeUrl := func(srv *net.SRV, scheme string) *url.URL {
 		var target string
 		if srv.Target[len(srv.Target)-1] == '.' {
 			target = srv.Target[0 : len(srv.Target)-1]
@@ -43,10 +52,18 @@ func DiscoverBackendsFromDns(transport *http.Transport, domain string) ([]*Backe
 		hostPort := net.JoinHostPort(target, fmt.Sprintf("%d", srv.Port))
 
 		u := &url.URL{
-			Scheme: "http",
+			Scheme: scheme,
 			Host:   hostPort,
 		}
-		urls = append(urls, u)
+		return u
+	}
+
+	for _, srv := range ssl_records {
+		urls = append(urls, makeUrl(srv, "https"))
+	}
+
+	for _, srv := range records {
+		urls = append(urls, makeUrl(srv, "http"))
 	}
 
 	return DiscoverBackendsFromEtcdPeer(transport, urls), nil
