@@ -22,7 +22,6 @@ func TestBackends(t *testing.T) {
 	router := NewRouter(time.Second*60, func() ([]*Backend, error) {
 		return generateBackendsForTest(3), nil
 	})
-	router.Update()
 
 	backends := router.Backends()
 
@@ -47,7 +46,6 @@ func TestAvailableBackends(t *testing.T) {
 	router := NewRouter(time.Second*60, func() ([]*Backend, error) {
 		return backendsSource, nil
 	})
-	router.Update()
 
 	backendsSource[0].Fail()
 
@@ -71,7 +69,6 @@ func TestFailedBackends(t *testing.T) {
 	router := NewRouter(time.Second*60, func() ([]*Backend, error) {
 		return backendsSource, nil
 	})
-	router.Update()
 
 	backendsSource[1].Fail()
 	backendsSource[2].Fail()
@@ -95,7 +92,6 @@ func TestShuffledAvailableBackends(t *testing.T) {
 	router := NewRouter(time.Second*60, func() ([]*Backend, error) {
 		return generateBackendsForTest(3), nil
 	})
-	router.Update()
 
 	backends := router.ShuffledAvailableBackends()
 
@@ -127,7 +123,6 @@ func TestUpdate(t *testing.T) {
 		return generateBackendsForTest(2 + i), nil
 	})
 
-	router.Update()
 	backends := router.Backends()
 
 	if len(backends) != 3 {
@@ -180,7 +175,6 @@ func TestUpdateFail(t *testing.T) {
 		return
 	})
 
-	router.Update()
 	router.Update()
 	backends := router.Backends()
 

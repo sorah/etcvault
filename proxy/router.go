@@ -27,12 +27,14 @@ type Router struct {
 }
 
 func NewRouter(interval time.Duration, updateFunc BackendUpdateFunc) *Router {
-	return &Router{
+	router := &Router{
 		backends:       []*Backend{},
 		UpdateFunc:     updateFunc,
 		UpdateInterval: interval,
 		updateStopCh:   nil,
 	}
+	router.Update()
+	return router
 }
 
 func (router *Router) StartUpdate() error {
