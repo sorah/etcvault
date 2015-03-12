@@ -88,10 +88,10 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 		}
 
 		transformedJson, err := proxy.Engine.TransformEtcdJsonResponse(json)
-		if err != nil {
+		if err == nil {
 			response.Write(transformedJson)
 		} else {
-			io.Copy(response, backendResponse.Body)
+			response.Write(json)
 		}
 	} else {
 		io.Copy(response, backendResponse.Body)
