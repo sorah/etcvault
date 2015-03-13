@@ -87,8 +87,6 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 
 	backends := proxy.Router.ShuffledAvailableBackends()
 	for _, backend := range backends {
-		log.Printf("trying %s", backend.Url.String())
-
 		backendRequest.URL.Scheme = backend.Url.Scheme
 		backendRequest.URL.Host = backend.Url.Host
 
