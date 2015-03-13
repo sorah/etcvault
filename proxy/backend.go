@@ -38,8 +38,13 @@ func (backend *Backend) Fail() {
 
 	backend.resumeTimer = time.AfterFunc(backend.nextCheckInterval, func() {
 		backend.Lock()
-		backend.Available = true
-		backend.Unlock()
+		if !backend.Available {
+			backend.Available = true
+			backend.Unlock()
+		} else {
+			backend.Unlock()
+			return
+		}
 
 		log.Printf("Backend %s resumed (automatically)", backend.Url.String())
 	})
@@ -51,6 +56,7 @@ func (backend *Backend) Ok() {
 	backend.Lock()
 	defer backend.Unlock()
 
+	wasUnavailable := !backend.Available
 	backend.Available = true
 	backend.nextCheckInterval = time.Duration(time.Second) * 15
 
@@ -59,5 +65,7 @@ func (backend *Backend) Ok() {
 		backend.resumeTimer = nil
 	}
 
-	log.Printf("Backend %s resumed", backend.Url.String())
+	if wasUnavailable {
+		log.Printf("Backend %s resumed", backend.Url.String())
+	}
 }
