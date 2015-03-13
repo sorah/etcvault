@@ -76,7 +76,8 @@ $ etcvault start -keychain /path/to/keychain/directory -listen http://localhost:
 ## Options
 
 - `-listen`: URL to listen to.
-- `-keychain`
+- `-advertise-url`: URL to advertise. Used for `/v2/members` and `/v2/machines` response.
+- `-keychain`: Path to directory contains key files
 
 ### Discovery options
 
