@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"github.com/sorah/etcvault/engine"
 	"io"
 	"io/ioutil"
@@ -79,8 +80,6 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 	removeSingleHopHeaders(&backendResponse.Header)
 	copyHeader(backendResponse.Header, response.Header())
 
-	response.WriteHeader(backendResponse.StatusCode)
-
 	if backendResponse.Header.Get("Content-Type") == "application/json" {
 		json, err := ioutil.ReadAll(backendResponse.Body)
 		if err != nil {
@@ -89,11 +88,16 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 
 		transformedJson, err := proxy.Engine.TransformEtcdJsonResponse(json)
 		if err == nil {
+			response.Header().Set("Content-Length", fmt.Sprintf("%d", len(transformedJson)+1))
+			response.WriteHeader(backendResponse.StatusCode)
 			response.Write(transformedJson)
+			response.Write([]byte("\n"))
 		} else {
+			response.WriteHeader(backendResponse.StatusCode)
 			response.Write(json)
 		}
 	} else {
+		response.WriteHeader(backendResponse.StatusCode)
 		io.Copy(response, backendResponse.Body)
 	}
 }

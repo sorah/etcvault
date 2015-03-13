@@ -318,8 +318,8 @@ func TestProxyInvalidJsonResponse(t *testing.T) {
 	if recorder.Code != 200 {
 		t.Errorf("unexpected response code: %d", recorder.Code)
 	}
-	if recorder.Body.String() != `{"action":"create","node":{"key":"` {
-		t.Errorf("unexpected response body: %s", recorder.Body.String())
+	if recorder.Body.String() != "{\"action\":\"create\",\"node\":{\"key\":\"\n" {
+		t.Errorf("unexpected response body: %#v", recorder.Body.String())
 	}
 	if header := recorder.Header().Get("Content-Type"); header != "application/json" {
 		t.Errorf("unexpected Content-Type: %s", recorder.Header().Get("Content-Type"))
