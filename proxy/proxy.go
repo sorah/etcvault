@@ -93,6 +93,7 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 			response.Write(transformedJson)
 			response.Write([]byte("\n"))
 		} else {
+			fmt.Printf("transform error %s\n", err.Error())
 			response.WriteHeader(backendResponse.StatusCode)
 			response.Write(json)
 		}
