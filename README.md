@@ -1,61 +1,142 @@
 # etcvault - proxy for etcd, adding transparent encryption
 
-Still in development phase, so doesn't work. Stay tuned!
-
 ## Features
 
-- works as reverse proxy to etcd
-- transparent value decryption for GET
-- transparent value encryption for POST, PUT
-- multiple keys
+- Works as reverse proxy to etcd
+  - Can discover other etcd members
+  - Support etcd 2.0.x
+- Transparent value decryption for GET
+- Transparent value encryption for POST, PUT, PATCH
+- Multiple keys
 
-## Usage
+## Example
+
+Generate key first.
 
 ```
-$ etcvault -key-dir=/path/to/keys
+$ mkdir /tmp/keychain
+$ etcvault keygen -save /tmp/keychain my-key
 ```
 
-## Value format
+Start etcd and etcvault.
 
-### base
+```
+$ etcd -listen-client-urls http://127.0.0.1:2380 &
+$ etcvault start -listen http://127.0.0.1:2381 -initial-backends http://127.0.0.1:2379 -keychain /tmp/keychain &
+```
 
-- `ETCVAULT::{VERSION}:...::ETCVAULT`
-- `ETCVAULT::plain:{KEY}:{PLAINTEXT}::ETCVAULT`
+Set plain text
 
-### v1
+```
+$ etcdctl --peers http://127.0.0.1:2381 set greeting hello
+hello
+$ etcdctl get greeting
+hello
+```
 
-- `ETCVAULT::1:{KEY}:{FORMAT}:{DATA}::ETCVAULT`
-- `ETCVAULT::p1:{KEY}:{PLAIN}::ETCVAULT`
+Try encryption/decryption
 
-#### Sample
+```
+(this means encrypt "hello" with "my-key")
+$ etcdctl --peers http://127.0.0.1:2381 set greeting 'ETCVAULT::plain:my-key:hello::ETCVAULT'
+hello
 
-- `ETCVAULT::1:default::AQzrPLEElUzFCnj4Ww5E06CemfAs5rQeWcqI+Ht9aR7JbIwCrgLIzYtlDRxy7qto6WayL7xFh1R+Mw64FOv6JHuhMr121iishiIkPDQnI2foUfHqkRNOjY7bz5p/wF8T4+zgM51EXCBeahWrPUZ4gm8fCJhmOgsmVP9SAQk0zG0=::ETCVAULT`
-- `ETCVAULT::1:default:long:AQzrPLEElUzFCnj4Ww5E06CemfAs5rQeWcqI+Ht9aR7JbIwCrgLIzYtlDRxy7qZo6WayL7xFh1R+Mw64FOv6JHuhMr121iishiIkPDQnI2foUfHqkRNOjY7bz5p/wF8T4+zgM51EXCBeahWrPUZ4gm8fCJhmOgsmVP9SAQk0zG0=,AQzrPLEElUzFCnj4Ww5E06CemfAs5rQeWcqI+Ht9aR7JbIwCrgLIzYtlDRxy7qZo6WayL7xFh1R+Mw64FOv6JHuhMr121iishiIkPDQnI2foUfHqkRNOjY7bz5p/wF8T4+zgM51EXCBeahWrPUZ4gm8fCJhmOgsmVP9SAQk0zG0=::ETCVAULT`
-- `ETCVAULT::plain:default:p4ssw0rd::ETCVAULT`
+$ etcdctl --peers http://127.0.0.1:2381 get greeting
+hello
+
+(cannot read directly)
+$ etcdctl --peers http://127.0.0.1:2379 get greeting
+ETCVAULT::1:my-key::CMOAuEHp/gcbUFvRuQDDMtpIEl/MQ/2OeYT8sluZs8Fc+YjEalDGHzYSn5MM9FafD9fGMHg9ODPYKNk83i1xXZ9zRhKWeuvG8VrU0DlIQ0hdV3px2hDgJppQBYGfr7QVs/0CKaDFUpkMPuhp6dGkzJ+73ZllL3BTb5UjdW3yizYUB82Qs3fwEUZJnLTCvuejxzMF64weInQXnTBkVrt1Mq/QjBWVJvZty8vvAeEHDKo6n5NpgVlZrn48yVHdKWBzO2z5mQO4VK3MPfLUMPQgUsOBqqbUd4N/NjfxCmPL3cO+Y3FD4WiPvbKGGz6IjFnPr7MoWs8etV+vIC/33gOGSQ==::ETCVAULT
+```
+
+You can _transform_ `ETCVAULT::...::ETCVAULT` string to proper format using command
+
+```
+$ etcvault transform -keychain /tmp/keychain 'ETCVAULT::1:my-key::CMOAuEHp/gcbUFvRuQDDMtpIEl/MQ/2OeYT8sluZs8Fc+YjEalDGHzYSn5MM9FafD9fGMHg9ODPYKNk83i1xXZ9zRhKWeuvG8VrU0DlIQ0hdV3px2hDgJppQBYGfr7QVs/0CKaDFUpkMPuhp6dGkzJ+73ZllL3BTb5UjdW3yizYUB82Qs3fwEUZJnLTCvuejxzMF64weInQXnTBkVrt1Mq/QjBWVJvZty8vvAeEHDKo6n5NpgVlZrn48yVHdKWBzO2z5mQO4VK3MPfLUMPQgUsOBqqbUd4N/NjfxCmPL3cO+Y3FD4WiPvbKGGz6IjFnPr7MoWs8etV+vIC/33gOGSQ==::ETCVAULT'
+hello
+```
+
+## Detailed Usage
+
+### Generate keys
+
+```
+$ etcvault keygen NAME
+$ etcvault keygen -save /path/to/keychain/directory NAME
+```
+
+for more options, see help.
+
+### Start proxy
+
+```
+$ etcvault start -keychain /path/to/keychain/directory -listen http://localhost:2381 -initial-backends http://etcd:2379
+```
+
+## Options
+
+- `-listen`: URL to listen to.
+- `-keychain`
+
+### Discovery options
+
+Must be present `-initial-backends` or `-discovery-srv`. Backends are discovered using etcd's API.
+
+- `-initial-backends`: etcd client URLs separated by comma. (e.g. `http://etcd-1:2379,http://etcd-2:2379,...`)
+- `-discovery-srv`: FQDN to look up `_etcd-server._tcp` and `_etcd-server-ssl._tcp` SRV records.
+
+### TLS support
+
+etcvault supports HTTPS for both, transport with etcd and listening.
+
+#### Listen https
+
+just specify HTTPS url to `-listen` (e.g. `https://localhost:2381`). Valid certificate options are required.
+
+#### CA and key files
+
+- client:
+  - `-client-ca-file`
+    - Used to validate etcd client port's server sertificate.
+    - Also, when etcvault is listening HTTPS, and both `-listen-key-file` `-listen-cert-file` aren't present, this CA certificate will be used to validate etcvault's client certificate.
+  - `-client-key-file`, `client-cert-file`
+    - Used as client certificate to send to etcd client port.
+    - Also, when etcvault is listening HTTPS, and both `-listen-key-file` `-listen-cert-file` aren't present, this certificate will be used as etcvault's server certificate.
+
+- listen:
+  - `-listen-ca-file`
+    - When present with `-listen-key-file` and `-listen-cert-file`, etcvault will validate its client's certificate using this CA file.
+    - (only valid when `-listen-key-file` and `-listen-cert-file` are present)
+  - `-listen-key-file`, `listen-cert-file`
+    -  When present, etcvault won't use `-client-*` for etcvault's TLS server.
+    - This certificate is used for etcvault's server certificate
+
+- peer:
+  - `-peer-ca-file`
+    - Used to validate etcd peer port's server sertificate.
+  - `-peer-key-file`, `peer-cert-file`
+    - Used as client certificate to send to etcd peer port.
+  - __Note:__ etcvault communicates with etcd peer ports when using `-discovery-srv` option. If you're not using it, you can omit `-peer-*`.
+
+## Key distribution
+
+There's no best way to distribute keys. Try to do with your using server provisioning tools.
+
+Here's what file's required for encryption/decryption:
+
+- Hosts that only encryption
+  - Place `${KEYCHAIND_DIR}/${KEY_NAME}.pub`
+- Hosts that can do decryption
+  - Place `${KEYCHAIND_DIR}/${KEY_NAME}.pem`
+  - `${KEY_NAME}.pub` is not necessary.
+
+
+## FAQ
+
+### Why etcvault communicate with etcd *peer* port?
+
+etcvault communicates with etcd peer port when you're using `-discovery-srv` option. Because SRV records are points to peer port.
 
 ## License
 
-Copyright (c) 2015 Shota Fukumori (sora_h)
-
 MIT License
-
-```
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
