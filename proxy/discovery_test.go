@@ -31,22 +31,29 @@ func membersMock(count int, peer bool) (server *httptest.Server, tlsServer *http
 		members = append(members, member)
 	}
 
-	membersJson, err := json.Marshal(struct {
-		Members []memberT
-	}{
-		Members: members,
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	var path, host string
+	var membersJson []byte
+	var err error
+
 	if peer {
 		host = "node:2380"
 		path = "/members"
+		membersJson, err = json.Marshal(members)
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		host = "node:2379"
 		path = "/v2/members"
+		membersJson, err = json.Marshal(struct {
+			Members []memberT
+		}{
+			Members: members,
+		})
+		if err != nil {
+			panic(err)
+		}
+
 	}
 
 	server = httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, request *http.Request) {

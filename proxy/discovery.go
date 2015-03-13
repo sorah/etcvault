@@ -17,7 +17,6 @@ type etcdMember struct {
 	ClientURLs []string
 	PeerURLs   []string
 	Name       string
-	Id         string
 }
 
 type etcdMembers struct {
@@ -70,14 +69,14 @@ func DiscoverBackendsFromDns(transport *http.Transport, domain string) ([]*Backe
 }
 
 func DiscoverBackendsFromEtcdPeer(transport *http.Transport, urls []*url.URL) []*Backend {
-	return fetchBackendsFromEtcd(transport, urls, "/members")
+	return fetchBackendsFromEtcd(transport, urls, "/members", false)
 }
 
 func DiscoverBackendsFromEtcd(transport *http.Transport, urls []*url.URL) []*Backend {
-	return fetchBackendsFromEtcd(transport, urls, "/v2/members")
+	return fetchBackendsFromEtcd(transport, urls, "/v2/members", true)
 }
 
-func fetchBackendsFromEtcd(transport *http.Transport, urls []*url.URL, path string) []*Backend {
+func fetchBackendsFromEtcd(transport *http.Transport, urls []*url.URL, path string, wrapped bool) []*Backend {
 	client := &http.Client{Transport: transport}
 
 	for _, origUrl := range urls {
@@ -101,16 +100,25 @@ func fetchBackendsFromEtcd(transport *http.Transport, urls []*url.URL, path stri
 			panic(err)
 		}
 
-		members := &etcdMembers{}
-		err = json.Unmarshal(respBody, members)
+		var members []etcdMember
+		if wrapped {
+			jsonData := &etcdMembers{}
+			err = json.Unmarshal(respBody, jsonData)
+			members = jsonData.Members
+		} else {
+			jsonData := []etcdMember{}
+			err = json.Unmarshal(respBody, &jsonData)
+			members = jsonData
+		}
+
 		if err != nil {
 			log.Printf("error when parsing response from %s: %s", u.String(), err.Error())
 			continue
 		}
 
-		backends := make([]*Backend, 0, len(members.Members))
+		backends := make([]*Backend, 0, len(members))
 
-		for _, member := range members.Members {
+		for _, member := range members {
 			if len(member.ClientURLs) < 1 {
 				continue
 			}
