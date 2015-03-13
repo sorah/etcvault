@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-func NewReadonlyProxy(transport *http.Transport, router *Router, e engine.Transformable) http.Handler {
-	return readonlyHandler(NewProxy(transport, router, e))
+func NewReadonlyProxy(transport *http.Transport, router *Router, e engine.Transformable, advertiseUrl string) http.Handler {
+	return readonlyHandler(NewProxy(transport, router, e, advertiseUrl))
 }
 
 func readonlyHandler(handler http.Handler) http.Handler {

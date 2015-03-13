@@ -97,7 +97,7 @@ func TestProxyGet(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/v2/keys/greeting", nil)
 	recorder := httptest.NewRecorder()
@@ -128,7 +128,7 @@ func TestProxyPost(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("POST", "http://localhost/v2/keys/greeting", bytes.NewBufferString("value=hola"))
@@ -164,7 +164,7 @@ func TestProxyPut(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("PUT", "http://localhost/v2/keys/greeting", bytes.NewBufferString("value=hola"))
@@ -198,7 +198,7 @@ func TestProxyBackendFailure(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/v2/keys/greeting", nil)
 	recorder := httptest.NewRecorder()
@@ -230,7 +230,7 @@ func TestProxyBackendRetry(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/v2/keys/greeting", nil)
 	recorder := httptest.NewRecorder()
@@ -274,7 +274,7 @@ func TestProxyBackendFailureBackendNoRequest(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/v2/keys/greeting", nil)
 	recorder := httptest.NewRecorder()
@@ -309,7 +309,7 @@ func TestProxyInvalidJsonResponse(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/error", nil)
 	recorder := httptest.NewRecorder()
@@ -338,7 +338,7 @@ func TestProxyNonJsonResponse(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/text", nil)
 	recorder := httptest.NewRecorder()
@@ -370,7 +370,7 @@ func TestProxyHeadersToBackend(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/v2/keys/greeting", nil)
 	request.Header.Set("Connection", "hello!")
@@ -431,7 +431,7 @@ func TestProxyHeadersFromBackend(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewProxy(transport, router, &mockEngine{})
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://localhost:2381")
 
 	request, _ := http.NewRequest("GET", "http://localhost/headers", nil)
 

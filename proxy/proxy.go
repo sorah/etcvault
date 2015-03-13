@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/sorah/etcvault/engine"
 	"io"
@@ -32,20 +33,31 @@ var singleHopHeaders = []string{
 }
 
 type Proxy struct {
-	Transport *http.Transport
-	Router    *Router
-	Engine    engine.Transformable
+	Transport    *http.Transport
+	Router       *Router
+	Engine       engine.Transformable
+	AdvertiseUrl string
 }
 
-func NewProxy(transport *http.Transport, router *Router, e engine.Transformable) http.Handler {
+func NewProxy(transport *http.Transport, router *Router, e engine.Transformable, advertiseUrl string) http.Handler {
 	return &Proxy{
-		Transport: transport,
-		Router:    router,
-		Engine:    e,
+		Transport:    transport,
+		Router:       router,
+		Engine:       e,
+		AdvertiseUrl: advertiseUrl,
 	}
 }
 
 func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	if request.URL.Path == "/v2/members" {
+		proxy.serveMembersRequest(response, request)
+		return
+	}
+	if request.URL.Path == "/v2/machines" {
+		proxy.serveMachinesRequest(response, request)
+		return
+	}
+
 	backendRequest := new(http.Request)
 	// copy
 	*backendRequest = *request
@@ -132,6 +144,55 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 		response.WriteHeader(backendResponse.StatusCode)
 		io.Copy(response, backendResponse.Body)
 	}
+}
+
+func (proxy *Proxy) serveMembersRequest(response http.ResponseWriter, request *http.Request) {
+	if request.Method != "GET" {
+		http.Error(response, "not supported; communicate with etcd directly", http.StatusMethodNotAllowed)
+		return
+	}
+
+	type memberT struct {
+		ClientURLs []string
+		PeerURLs   []string
+		Name       string
+		Id         string
+	}
+
+	jsonBytes, err := json.Marshal(struct {
+		Members []memberT
+	}{
+		Members: []memberT{
+			{
+				ClientURLs: []string{proxy.AdvertiseUrl},
+				Name:       "etcvault",
+				Id:         "deadbeef",
+			},
+		},
+	})
+
+	if err != nil {
+		http.Error(response, "failed to marshal", 500)
+		log.Printf("failed to marshal /v2/members: %s", err.Error())
+		return
+	}
+
+	response.Header().Add("Content-Type", "application/json")
+	response.Header().Add("Server", "etcvault")
+	response.WriteHeader(200)
+	response.Write(jsonBytes)
+}
+
+func (proxy *Proxy) serveMachinesRequest(response http.ResponseWriter, request *http.Request) {
+	if request.Method != "GET" {
+		http.Error(response, "not supported; communicate with etcd directly", http.StatusMethodNotAllowed)
+		return
+	}
+
+	response.Header().Add("Content-Type", "text/plain")
+	response.Header().Add("Server", "etcvault")
+	response.WriteHeader(200)
+	response.Write([]byte(proxy.AdvertiseUrl))
 }
 
 func copyHeader(source, destination http.Header) {

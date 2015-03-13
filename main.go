@@ -34,6 +34,12 @@ func main() {
 					Usage: "URL to listen. Specify https as scheme to listen HTTPS.",
 				},
 				cli.StringFlag{
+					Name:  "advertise-url",
+					Value: "http://localhost:2381",
+					Usage: "Client URL to advertise. Usually specify etcvault's URL",
+				},
+
+				cli.StringFlag{
 					Name:  "discovery-srv",
 					Usage: "domain to fetch SRV records for backend etcd",
 				},
@@ -253,6 +259,8 @@ func actionStart(ctx *cli.Context) {
 		os.Exit(1)
 	}
 
+	advertiseUrl := ctx.String("advertise-url")
+
 	starter := &ProxyStarter{
 		Listen:                   listenUrl,
 		keychainDir:              keychainDir,
@@ -269,6 +277,7 @@ func actionStart(ctx *cli.Context) {
 		listenKeyFilePath:        listenKeyFilePath,
 		discoveryInterval:        time.Duration(discoveryInterval) * time.Second,
 		readonly:                 readonly,
+		AdvertiseUrl:             advertiseUrl,
 	}
 
 	starter.Start()

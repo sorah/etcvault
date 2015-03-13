@@ -24,7 +24,7 @@ func TestReadonlyProxyGet(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewReadonlyProxy(transport, router, &mockEngine{})
+	proxyHandler := NewReadonlyProxy(transport, router, &mockEngine{}, "http://localhost")
 
 	request, _ := http.NewRequest("GET", "http://localhost/v2/keys/greeting", nil)
 	recorder := httptest.NewRecorder()
@@ -57,7 +57,7 @@ func TestReadonlyProxyPost(t *testing.T) {
 		return backends, nil
 	})
 
-	proxyHandler := NewReadonlyProxy(transport, router, &mockEngine{})
+	proxyHandler := NewReadonlyProxy(transport, router, &mockEngine{}, "http://localhost")
 
 	request, _ := http.NewRequest("POST", "http://localhost/v2/keys/greeting", nil)
 	recorder := httptest.NewRecorder()

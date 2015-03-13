@@ -103,7 +103,8 @@ func tlsConfigurationForServerUse(config *tls.Config, caPath string) *tls.Config
 
 type ProxyStarter struct {
 	// arguments
-	Listen *url.URL
+	Listen       *url.URL
+	AdvertiseUrl string
 
 	keychainDir              string
 	DiscoverySrvDomain       string
@@ -251,9 +252,9 @@ func (starter *ProxyStarter) Router() *proxy.Router {
 
 func (starter *ProxyStarter) Proxy() http.Handler {
 	if starter.readonly {
-		return proxy.NewReadonlyProxy(starter.ClientHttpTransport(), starter.Router(), starter.Engine())
+		return proxy.NewReadonlyProxy(starter.ClientHttpTransport(), starter.Router(), starter.Engine(), starter.AdvertiseUrl)
 	} else {
-		return proxy.NewProxy(starter.ClientHttpTransport(), starter.Router(), starter.Engine())
+		return proxy.NewProxy(starter.ClientHttpTransport(), starter.Router(), starter.Engine(), starter.AdvertiseUrl)
 	}
 }
 
