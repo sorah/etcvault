@@ -7,8 +7,10 @@ import (
 	"github.com/sorah/etcvault/engine"
 	"github.com/sorah/etcvault/keys"
 	"io"
+	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -17,6 +19,63 @@ func main() {
 	app.Usage = "proxy for etcd, adding transparent encryption"
 
 	app.Commands = []cli.Command{
+		{
+			Name:   "start",
+			Usage:  "start etcvault proxy",
+			Action: actionStart,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "keychain",
+					Usage: "Path to directory for keys",
+				},
+				cli.StringFlag{
+					Name:  "listen",
+					Value: "http://localhost:2381",
+					Usage: "URL to listen. Specify https as scheme to listen HTTPS.",
+				},
+				cli.StringFlag{
+					Name:  "discovery-srv",
+					Usage: "domain to fetch SRV records for backend etcd",
+				},
+				cli.StringFlag{
+					Name:  "initial-backends",
+					Usage: "backend urls to fetch backend etcd members, separeted by comma",
+				},
+				cli.StringFlag{
+					Name:  "ca-file",
+					Usage: "TLS CA file to verify certificate of etcd client ports (https://...:2379/) and to validate etcvault itself's client",
+				},
+				cli.StringFlag{
+					Name:  "cert-file",
+					Usage: "TLS certficate file to send when communicating with etcd client ports (https://...:2379/) and for etcvault itself (when serving HTTPS)",
+				},
+				cli.StringFlag{
+					Name:  "client-key-file",
+					Usage: "key for -client-cert-file",
+				},
+				cli.StringFlag{
+					Name:  "peer-ca-file",
+					Usage: "TLS CA file to verify certificate of etcd peer ports (https://...:2380/)",
+				},
+				cli.StringFlag{
+					Name:  "peer-cert-file",
+					Usage: "TLS certficate file to send when communicating with etcd peer ports (https://...:2380/)",
+				},
+				cli.StringFlag{
+					Name:  "peer-key-file",
+					Usage: "key for -peer-cert-file",
+				},
+				cli.IntFlag{
+					Name:  "discovery-interval",
+					Value: 120,
+					Usage: "Interval (in second) to refresh backends with specified discovery method",
+				},
+				cli.BoolFlag{
+					Name:  "readonly",
+					Usage: "if set, etcvault will reject non GET requests",
+				},
+			},
+		},
 		{
 			Name:   "keygen",
 			Usage:  "Generate new private key with specified name",
@@ -120,4 +179,74 @@ func actionTransform(ctx *cli.Context) {
 			}
 		}
 	}
+}
+
+func actionStart(ctx *cli.Context) {
+	keychainDir := ctx.String("keychain")
+	if keychainDir == "" {
+		fmt.Fprintln(os.Stderr, "Specify -keychain option")
+		os.Exit(1)
+	}
+
+	discoverySrvDomain := ctx.String("discovery-srv")
+	initialBackendUrlStrings := ctx.String("initial-backends")
+	if discoverySrvDomain == "" && initialBackendUrlStrings == "" {
+		fmt.Fprintln(os.Stderr, "Specify -discovery-srv or -initial-backends option")
+		os.Exit(1)
+	}
+	if discoverySrvDomain != "" && initialBackendUrlStrings != "" {
+		fmt.Fprintln(os.Stderr, "Only specifying only either -discovery-srv or -initial-backends is accepted.")
+		os.Exit(1)
+	}
+
+	clientCaFilePath := ctx.String("ca-file")
+	clientCertFilePath := ctx.String("cert-file")
+	clientKeyFilePath := ctx.String("key-file")
+	if (clientCertFilePath != "" || clientKeyFilePath != "") && !(clientCertFilePath != "" && clientKeyFilePath != "") {
+		fmt.Fprintln(os.Stderr, "provide both -cert-file and -key-file")
+		os.Exit(1)
+	}
+
+	peerCaFilePath := ctx.String("peer-ca-file")
+	peerCertFilePath := ctx.String("peer-cert-file")
+	peerKeyFilePath := ctx.String("peer-key-file")
+	if (peerCertFilePath != "" || peerKeyFilePath != "") && !(peerCertFilePath != "" && peerKeyFilePath != "") {
+		fmt.Fprintln(os.Stderr, "provide both -peer-cert-file and -peer-key-file")
+		os.Exit(1)
+	}
+
+	discoveryInterval := ctx.Int("discovery-interval")
+
+	readonly := ctx.Bool("readonly")
+
+	listenUrl, err := url.Parse(ctx.String("listen"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "couldn't parse -listen as URL: %s\n", err.Error())
+		os.Exit(1)
+	}
+	if listenUrl.Path != "" && listenUrl.Path != "/ " {
+		fmt.Fprintf(os.Stderr, "-listen URL shouldn't include path: %s\n", listenUrl.Path)
+		os.Exit(1)
+	}
+	if !(clientCertFilePath != "" && clientKeyFilePath != "") && listenUrl.Scheme == "https" {
+		fmt.Fprintln(os.Stderr, "provide both -cert-file and -key-file when listen https")
+		os.Exit(1)
+	}
+
+	starter := &ProxyStarter{
+		Listen:                   listenUrl,
+		keychainDir:              keychainDir,
+		DiscoverySrvDomain:       discoverySrvDomain,
+		initialBackendUrlStrings: initialBackendUrlStrings,
+		clientCaFilePath:         clientCaFilePath,
+		clientCertFilePath:       clientCertFilePath,
+		clientKeyFilePath:        clientKeyFilePath,
+		peerCaFilePath:           peerCaFilePath,
+		peerCertFilePath:         peerCertFilePath,
+		peerKeyFilePath:          peerKeyFilePath,
+		discoveryInterval:        time.Duration(discoveryInterval) * time.Second,
+		readonly:                 readonly,
+	}
+
+	starter.Start()
 }
