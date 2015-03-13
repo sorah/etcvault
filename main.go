@@ -50,7 +50,7 @@ func main() {
 					Usage: "TLS certficate file to send when communicating with etcd client ports (https://...:2379/) and for etcvault itself (when serving HTTPS)",
 				},
 				cli.StringFlag{
-					Name:  "client-key-file",
+					Name:  "key-file",
 					Usage: "key for -client-cert-file",
 				},
 				cli.StringFlag{
