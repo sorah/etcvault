@@ -109,6 +109,7 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 			backend.Fail()
 			continue
 		}
+		backend.Ok()
 		break
 	}
 
