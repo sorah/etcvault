@@ -17,6 +17,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "etcvault"
 	app.Usage = "proxy for etcd, adding transparent encryption"
+	app.Version = "0.1.0"
 
 	app.Commands = []cli.Command{
 		{
