@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/sorah/etcvault/engine"
 	"io"
@@ -8,6 +9,14 @@ import (
 	"log"
 	"net/http"
 )
+
+type ClosableBuffer struct {
+	*bytes.Buffer
+}
+
+func (buf ClosableBuffer) Close() error {
+	return nil
+}
 
 // Hop-by-hop headers (borrowed from httputil.ReverseProxy)
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
@@ -49,6 +58,30 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 
 	copyHeader(request.Header, backendRequest.Header)
 	removeSingleHopHeaders(&backendRequest.Header)
+
+	if (backendRequest.Method == "POST" || backendRequest.Method == "PUT" || backendRequest.Method == "PATCH") && backendRequest.Body != nil {
+		origBody := backendRequest.Body
+		defer origBody.Close()
+
+		if err := backendRequest.ParseForm(); err != nil {
+			log.Printf("couldn't parse form: %s", err.Error())
+			http.Error(response, "couldn't parse form", 400)
+			return
+		}
+
+		if backendRequest.PostForm != nil {
+			origValue := backendRequest.PostForm.Get("value")
+			value, err := proxy.Engine.Transform(origValue)
+			if err == nil {
+				backendRequest.PostForm.Set("value", value)
+			} else {
+				log.Printf("failed to transform value: %s", err.Error())
+			}
+			newFormString := backendRequest.PostForm.Encode()
+			backendRequest.Body = ClosableBuffer{bytes.NewBufferString(newFormString)}
+			backendRequest.ContentLength = int64(len(newFormString))
+		}
+	}
 
 	var backendResponse *http.Response
 

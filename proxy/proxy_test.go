@@ -139,7 +139,7 @@ func TestProxyPost(t *testing.T) {
 	if recorder.Code != 200 {
 		t.Errorf("unexpected response code: %s")
 	}
-	if received != "hola" {
+	if received != "<hola>" {
 		t.Errorf("unexpected request form value: %s", received)
 	}
 	if strings.Contains(recorder.Body.String(), "<hola>") {
@@ -174,7 +174,7 @@ func TestProxyPut(t *testing.T) {
 	if recorder.Code != 200 {
 		t.Errorf("unexpected response code: %d", recorder.Code)
 	}
-	if received != "hola" {
+	if received != "<hola>" {
 		t.Errorf("unexpected request form value: %s", received)
 	}
 	if strings.Contains(recorder.Body.String(), "<hola>") {
