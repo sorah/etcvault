@@ -117,6 +117,10 @@ type ProxyStarter struct {
 	peerCertFilePath string
 	peerKeyFilePath  string
 
+	listenCaFilePath   string
+	listenCertFilePath string
+	listenKeyFilePath  string
+
 	readonly bool
 
 	discoveryInterval time.Duration
@@ -148,6 +152,14 @@ func (starter *ProxyStarter) Engine() *engine.Engine {
 	return engine.NewEngine(starter.Keychain())
 }
 
+func (starter *ProxyStarter) ListenTlsConfig() *tls.Config {
+	if starter.listenKeyFilePath != "" && starter.listenCertFilePath != "" {
+		return parseTlsKeypair(starter.listenCertFilePath, starter.listenKeyFilePath)
+	} else {
+		return nil
+	}
+}
+
 func (starter *ProxyStarter) PeerTlsConfig() *tls.Config {
 	if starter.peerKeyFilePath != "" && starter.peerCertFilePath != "" {
 		return parseTlsKeypair(starter.peerCertFilePath, starter.peerKeyFilePath)
@@ -164,12 +176,18 @@ func (starter *ProxyStarter) ClientTlsConfig() *tls.Config {
 	}
 }
 
-func (starter *ProxyStarter) ClientTlsConfigForClientUse() *tls.Config {
-	return tlsConfigurationForClientUse(starter.ClientTlsConfig(), starter.clientCaFilePath)
+func (starter *ProxyStarter) TlsConfigForServerUse() *tls.Config {
+	if starter.listenKeyFilePath != "" && starter.listenCertFilePath != "" {
+		return tlsConfigurationForServerUse(starter.ListenTlsConfig(), starter.listenCaFilePath)
+	} else if starter.clientKeyFilePath != "" && starter.clientCertFilePath != "" {
+		return tlsConfigurationForServerUse(starter.ClientTlsConfig(), starter.clientCaFilePath)
+	} else {
+		return nil
+	}
 }
 
-func (starter *ProxyStarter) ClientTlsConfigForServerUse() *tls.Config {
-	return tlsConfigurationForServerUse(starter.ClientTlsConfig(), starter.clientCaFilePath)
+func (starter *ProxyStarter) ClientTlsConfigForClientUse() *tls.Config {
+	return tlsConfigurationForClientUse(starter.ClientTlsConfig(), starter.clientCaFilePath)
 }
 
 func (starter *ProxyStarter) PeerTlsConfigForClientUse() *tls.Config {
@@ -196,7 +214,7 @@ func (starter *ProxyStarter) Listener() net.Listener {
 	}
 
 	if starter.Listen.Scheme == "https" {
-		tlsConfig := starter.ClientTlsConfigForServerUse()
+		tlsConfig := starter.TlsConfigForServerUse()
 		listener = tls.NewListener(listener, tlsConfig)
 	}
 

@@ -42,15 +42,15 @@ func main() {
 					Usage: "backend urls to fetch backend etcd members, separeted by comma",
 				},
 				cli.StringFlag{
-					Name:  "ca-file",
-					Usage: "TLS CA file to verify certificate of etcd client ports (https://...:2379/) and to validate etcvault itself's client",
+					Name:  "client-ca-file",
+					Usage: "TLS CA file to verify certificate of etcd client ports (https://...:2379/)",
 				},
 				cli.StringFlag{
-					Name:  "cert-file",
-					Usage: "TLS certficate file to send when communicating with etcd client ports (https://...:2379/) and for etcvault itself (when serving HTTPS)",
+					Name:  "client-cert-file",
+					Usage: "TLS certficate file to send when communicating with etcd client ports (https://...:2379/)",
 				},
 				cli.StringFlag{
-					Name:  "key-file",
+					Name:  "client-key-file",
 					Usage: "key for -client-cert-file",
 				},
 				cli.StringFlag{
@@ -64,6 +64,18 @@ func main() {
 				cli.StringFlag{
 					Name:  "peer-key-file",
 					Usage: "key for -peer-cert-file",
+				},
+				cli.StringFlag{
+					Name:  "listen-ca-file",
+					Usage: "When listening HTTPS and this is present, etcvault will validate its client with using this CA certificate. If not present, -client-ca-file will be used.",
+				},
+				cli.StringFlag{
+					Name:  "listen-cert-file",
+					Usage: "When listening HTTPS and this is present, etcvault will use this certificate to listen. If not present, -client-cert-file will be used.",
+				},
+				cli.StringFlag{
+					Name:  "listen-key-file",
+					Usage: "key for -listen-cert-file",
 				},
 				cli.IntFlag{
 					Name:  "discovery-interval",
@@ -199,11 +211,11 @@ func actionStart(ctx *cli.Context) {
 		os.Exit(1)
 	}
 
-	clientCaFilePath := ctx.String("ca-file")
-	clientCertFilePath := ctx.String("cert-file")
-	clientKeyFilePath := ctx.String("key-file")
+	clientCaFilePath := ctx.String("client-ca-file")
+	clientCertFilePath := ctx.String("client-cert-file")
+	clientKeyFilePath := ctx.String("client-key-file")
 	if (clientCertFilePath != "" || clientKeyFilePath != "") && !(clientCertFilePath != "" && clientKeyFilePath != "") {
-		fmt.Fprintln(os.Stderr, "provide both -cert-file and -key-file")
+		fmt.Fprintln(os.Stderr, "provide both -client-cert-file and -client-key-file")
 		os.Exit(1)
 	}
 
@@ -212,6 +224,14 @@ func actionStart(ctx *cli.Context) {
 	peerKeyFilePath := ctx.String("peer-key-file")
 	if (peerCertFilePath != "" || peerKeyFilePath != "") && !(peerCertFilePath != "" && peerKeyFilePath != "") {
 		fmt.Fprintln(os.Stderr, "provide both -peer-cert-file and -peer-key-file")
+		os.Exit(1)
+	}
+
+	listenCaFilePath := ctx.String("listen-ca-file")
+	listenCertFilePath := ctx.String("listen-cert-file")
+	listenKeyFilePath := ctx.String("listen-key-file")
+	if (listenCertFilePath != "" || listenKeyFilePath != "") && !(listenCertFilePath != "" && listenKeyFilePath != "") {
+		fmt.Fprintln(os.Stderr, "provide both -listen-cert-file and -listen-key-file")
 		os.Exit(1)
 	}
 
@@ -244,6 +264,9 @@ func actionStart(ctx *cli.Context) {
 		peerCaFilePath:           peerCaFilePath,
 		peerCertFilePath:         peerCertFilePath,
 		peerKeyFilePath:          peerKeyFilePath,
+		listenCaFilePath:         listenCaFilePath,
+		listenCertFilePath:       listenCertFilePath,
+		listenKeyFilePath:        listenKeyFilePath,
 		discoveryInterval:        time.Duration(discoveryInterval) * time.Second,
 		readonly:                 readonly,
 	}
