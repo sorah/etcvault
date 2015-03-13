@@ -76,16 +76,19 @@ func parseTlsKeypair(certPath, keyPath string) *tls.Config {
 
 func tlsConfigurationForClientUse(config *tls.Config, caPath string) *tls.Config {
 	if config == nil {
-		return nil
+		config = &tls.Config{}
 	}
 
-	config.RootCAs = caPool(caPath)
+	if caPath != "" {
+		config.RootCAs = caPool(caPath)
+	}
+
 	return config
 }
 
 func tlsConfigurationForServerUse(config *tls.Config, caPath string) *tls.Config {
 	if config == nil {
-		return nil
+		config = &tls.Config{}
 	}
 
 	if caPath != "" {
@@ -94,6 +97,7 @@ func tlsConfigurationForServerUse(config *tls.Config, caPath string) *tls.Config
 	} else {
 		config.ClientAuth = tls.NoClientCert
 	}
+
 	return config
 }
 
