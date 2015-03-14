@@ -98,7 +98,7 @@ just specify HTTPS url to `-listen` (e.g. `https://localhost:2381`). Valid certi
 
 - client:
   - `-client-ca-file`
-    - Used to validate etcd client port's server sertificate.
+    - Used to validate etcd client port's server certificate.
     - Also, when etcvault is listening HTTPS, and both `-listen-key-file` `-listen-cert-file` aren't present, this CA certificate will be used to validate etcvault's client certificate.
   - `-client-key-file`, `client-cert-file`
     - Used as client certificate to send to etcd client port.
