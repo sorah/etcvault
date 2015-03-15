@@ -9,6 +9,14 @@
 - Transparent value encryption for POST, PUT, PATCH
 - Multiple keys
 
+## Motivation
+
+Maintaining multiple etcd clusters is hard. We wanted to use same etcd cluster for across services, entire our infrastructure.
+
+But currently etcd has no ACL like feature. All server can read any values even if it's not required for that server (e.g. credentials for different service). That's the reason why I developed Etcvault.
+
+And I know there's ongoing RFC for etcd, about ACL: https://github.com/coreos/etcd/blob/master/Documentation/rfc/api_security.md
+
 ## Example
 
 Generate key first.
