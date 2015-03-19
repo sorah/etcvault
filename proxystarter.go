@@ -65,7 +65,7 @@ func parseTlsKeypair(certPath, keyPath string) *tls.Config {
 
 	keypair, err := tls.X509KeyPair(certBytes, keyBytes)
 	if err != nil {
-		fmt.Printf("error loading keypair: %s", err.Error())
+		fmt.Printf("error loading keypair: %s\n", err.Error())
 	}
 
 	return &tls.Config{
