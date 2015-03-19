@@ -51,13 +51,14 @@ func NewProxy(transport *http.Transport, router *Router, e engine.Transformable,
 func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	if request.URL.Path == "/v2/members" {
 		proxy.serveMembersRequest(response, request)
-		return
-	}
-	if request.URL.Path == "/v2/machines" {
+	} else if request.URL.Path == "/v2/machines" {
 		proxy.serveMachinesRequest(response, request)
-		return
+	} else {
+		proxy.serveProxyRequest(response, request)
 	}
+}
 
+func (proxy *Proxy) serveProxyRequest(response http.ResponseWriter, request *http.Request) {
 	backendRequest := new(http.Request)
 	// copy
 	*backendRequest = *request
