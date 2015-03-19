@@ -2,12 +2,14 @@ package proxy
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/sorah/etcvault/engine"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -465,5 +467,70 @@ func TestProxyHeadersFromBackend(t *testing.T) {
 	}
 	if receivedHeader.Get("Upgrade") == "hello!" {
 		t.Errorf("unexpected response header %s from backend: %s", "Upgrade", receivedHeader.Get("Upgrade"))
+	}
+}
+
+func TestProxyMembersRequest(t *testing.T) {
+	cancel, _, _, _, transport := etcdMock(func(request *http.Request) {
+	})
+	defer cancel()
+
+	router := NewRouter(time.Hour*24, func() ([]*Backend, error) {
+		return []*Backend{}, nil
+	})
+
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://advertise-url")
+
+	request, _ := http.NewRequest("GET", "http://localhost/v2/members", nil)
+
+	recorder := httptest.NewRecorder()
+	proxyHandler.ServeHTTP(recorder, request)
+
+	if recorder.Code != 200 {
+		t.Errorf("unexpected response code: %d", recorder.Code)
+	}
+	if header := recorder.Header().Get("Content-Type"); header != "application/json" {
+		t.Errorf("unexpected Content-Type: %s", recorder.Header().Get("Content-Type"))
+	}
+
+	expectedJson := map[string]interface{}{}
+	err := json.Unmarshal([]byte(`{"Members":[{"ClientURLs":["http://advertise-url"],"PeerURLs":null,"Name":"etcvault","Id":"deadbeef"}]}`), &expectedJson)
+	if err != nil {
+		panic(err)
+	}
+
+	responseJson := map[string]interface{}{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &responseJson)
+	if err != nil {
+		t.Errorf("response body couldn't parse as JSON: %s\n%s", err.Error(), recorder.Body.String())
+	}
+
+	if !reflect.DeepEqual(responseJson, expectedJson) {
+		t.Errorf("unexpected response body: %s", recorder.Body.String())
+	}
+
+}
+
+func TestProxyMachines(t *testing.T) {
+	cancel, _, _, _, transport := etcdMock(func(request *http.Request) {
+	})
+	defer cancel()
+
+	router := NewRouter(time.Hour*24, func() ([]*Backend, error) {
+		return []*Backend{}, nil
+	})
+
+	proxyHandler := NewProxy(transport, router, &mockEngine{}, "http://advertise-url")
+
+	request, _ := http.NewRequest("GET", "http://localhost/v2/machines", nil)
+
+	recorder := httptest.NewRecorder()
+	proxyHandler.ServeHTTP(recorder, request)
+
+	if recorder.Code != 200 {
+		t.Errorf("unexpected response code: %d", recorder.Code)
+	}
+	if recorder.Body.String() != "http://advertise-url" {
+		t.Errorf("unexpected response body: %s", recorder.Body.String())
 	}
 }
