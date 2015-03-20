@@ -2,9 +2,13 @@ package keys
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 )
 
 var ErrKeyNotFound = errors.New("couldn't find specified key")
@@ -60,4 +64,47 @@ func (keychain *Keychain) Save(key *Key) error {
 		return ioutil.WriteFile(privateKeyPath, key.PrivatePem(), 0600)
 	}
 	return nil
+}
+
+func (keychain *Keychain) List() []string {
+	namesMap := make(map[string]bool)
+
+	addNames := func(ext string) {
+		matches, err := filepath.Glob(path.Join(keychain.Path, fmt.Sprintf("*.%s", ext)))
+		if err != nil {
+			log.Printf("error looking for key list (%s): %s", ext, err.Error())
+			return
+		}
+		for _, keyPath := range matches {
+			name := strings.TrimSuffix(path.Base(keyPath), fmt.Sprintf(".%s", ext))
+			namesMap[name] = true
+		}
+	}
+
+	addNames("pub")
+	addNames("pem")
+
+	names := make([]string, 0, len(namesMap))
+	for name, _ := range namesMap {
+		names = append(names, name)
+	}
+	return names
+}
+
+func (keychain *Keychain) ListForEncryption() []string {
+	matches, err := filepath.Glob(path.Join(keychain.Path, "*.pem"))
+	if err != nil {
+		log.Printf("error looking for key list (pem): %s", err.Error())
+		return []string{}
+	}
+	names := make([]string, 0, len(matches))
+	for _, keyPath := range matches {
+		name := strings.TrimSuffix(path.Base(keyPath), ".pem")
+		names = append(names, name)
+	}
+	return names
+}
+
+func (keychain *Keychain) ListForDecryption() []string {
+	return keychain.List()
 }

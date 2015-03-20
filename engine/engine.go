@@ -17,6 +17,7 @@ var ErrTooShortKey = errors.New("key too short; couldn't generate 16, 24, and 32
 type Transformable interface {
 	Transform(text string) (string, error)
 	TransformEtcdJsonResponse(jsonData []byte) ([]byte, error)
+	GetKeychain() *keys.Keychain
 }
 
 type Engine struct {
@@ -27,6 +28,10 @@ func NewEngine(keychain *keys.Keychain) *Engine {
 	return &Engine{
 		Keychain: keychain,
 	}
+}
+
+func (engine *Engine) GetKeychain() *keys.Keychain {
+	return engine.Keychain
 }
 
 func (engine *Engine) Transform(text string) (string, error) {

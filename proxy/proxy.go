@@ -53,6 +53,8 @@ func (proxy *Proxy) ServeHTTP(response http.ResponseWriter, request *http.Reques
 		proxy.serveMembersRequest(response, request)
 	} else if request.URL.Path == "/v2/machines" {
 		proxy.serveMachinesRequest(response, request)
+	} else if request.URL.Path == "/_etcvault/keys" {
+		proxy.serveEtcvaultKeysRequest(response, request)
 	} else {
 		proxy.serveProxyRequest(response, request)
 	}
@@ -195,6 +197,30 @@ func (proxy *Proxy) serveMachinesRequest(response http.ResponseWriter, request *
 	response.Header().Add("Server", "etcvault")
 	response.WriteHeader(200)
 	response.Write([]byte(proxy.AdvertiseUrl))
+}
+
+func (proxy *Proxy) serveEtcvaultKeysRequest(response http.ResponseWriter, request *http.Request) {
+	if request.Method != "GET" {
+		http.Error(response, "not found", http.StatusNotFound)
+		return
+	}
+
+	request.ParseForm()
+	var list []string
+	if request.FormValue("encryption") != "" {
+		list = proxy.Engine.GetKeychain().ListForEncryption()
+	} else {
+		list = proxy.Engine.GetKeychain().List()
+	}
+
+	response.Header().Add("Content-Type", "text/plain")
+	response.Header().Add("Server", "etcvault")
+	response.WriteHeader(200)
+
+	for _, name := range list {
+		response.Write([]byte(name))
+		response.Write([]byte("\n"))
+	}
 }
 
 func copyHeader(source, destination http.Header) {

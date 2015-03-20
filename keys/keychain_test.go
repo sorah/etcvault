@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -209,5 +210,45 @@ func TestKeychainSaveAlreadyExist(t *testing.T) {
 
 	if err != ErrKeyAlreadyExists {
 		t.Errorf("unexpected error %#v", err.Error())
+	}
+}
+
+func TestKeychainListKeys(t *testing.T) {
+	keychain := GetKeychain()
+	defer DestroyKeychain(keychain)
+
+	if err := ioutil.WriteFile(path.Join(keychain.Path, "the-key.pem"), testRsaPrivateKey, 0600); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile(path.Join(keychain.Path, "the-key.pub"), testRsaPublicKey, 0644); err != nil {
+		panic(err)
+	}
+
+	if err := ioutil.WriteFile(path.Join(keychain.Path, "privonly.pem"), testRsaPrivateKey, 0600); err != nil {
+		panic(err)
+	}
+
+	if err := ioutil.WriteFile(path.Join(keychain.Path, "pubonly.pub"), testRsaPublicKey, 0644); err != nil {
+		panic(err)
+	}
+
+	var list []string
+
+	list = keychain.List()
+	sort.Strings(list)
+	if !reflect.DeepEqual(list, []string{"privonly", "pubonly", "the-key"}) {
+		t.Errorf("unexpected List result: %#v", list)
+	}
+
+	list = keychain.ListForEncryption()
+	sort.Strings(list)
+	if !reflect.DeepEqual(list, []string{"privonly", "the-key"}) {
+		t.Errorf("unexpected ListForEncryption result: %#v", list)
+	}
+
+	list = keychain.ListForDecryption()
+	sort.Strings(list)
+	if !reflect.DeepEqual(list, []string{"privonly", "pubonly", "the-key"}) {
+		t.Errorf("unexpected ListForDecryption result: %#v", list)
 	}
 }
