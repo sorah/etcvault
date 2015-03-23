@@ -8,8 +8,8 @@ import (
 
 type V1 struct {
 	KeyName    string
-	ContentKey []byte
-	Content    []byte
+	ContentKey []byte `json:"-"`
+	Content    []byte `json:"-"`
 }
 
 func ParseV1(str string) (*V1, error) {

@@ -12,34 +12,39 @@ func TestTransformEtcdJsonResponse(t *testing.T) {
 		Expect []byte
 	}{
 		{
+			Name:   "non-container (node.value)",
+			Case:   []byte(`{"node": {"value": "non-container"}}`),
+			Expect: []byte(`{"node":{"value":"non-container"}}`),
+		},
+		{
 			Name:   "plain (node.value)",
 			Case:   []byte(`{"node": {"value": "ETCVAULT::asis:plain::ETCVAULT"}}`),
-			Expect: []byte(`{"node":{"value":"plain"}}`),
+			Expect: []byte(`{"node":{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"}}`),
 		},
 		{
 			Name:   "plain (prevNode.value)",
 			Case:   []byte(`{"prevNode": {"value": "ETCVAULT::asis:plain::ETCVAULT"}}`),
-			Expect: []byte(`{"prevNode":{"value":"plain"}}`),
+			Expect: []byte(`{"prevNode":{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"}}`),
 		},
 		{
 			Name:   "both (node.value, prevNode.value)",
 			Case:   []byte(`{"node": {"value": "ETCVAULT::asis:plain::ETCVAULT"}, "prevNode": {"value": "ETCVAULT::asis:plain::ETCVAULT"}}`),
-			Expect: []byte(`{"node":{"value":"plain"},"prevNode":{"value":"plain"}}`),
+			Expect: []byte(`{"node":{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"},"prevNode":{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"}}`),
 		},
 		{
 			Name:   "inside directory (node.nodes[0].value)",
 			Case:   []byte(`{"node": {"nodes": [{"value": "ETCVAULT::asis:plain::ETCVAULT"}]}}`),
-			Expect: []byte(`{"node":{"nodes":[{"value":"plain"}]}}`),
+			Expect: []byte(`{"node":{"nodes":[{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"}]}}`),
 		},
 		{
 			Name:   "inside directory, multiple (node.nodes[0].value, node.nodes[1].value)",
 			Case:   []byte(`{"node": {"nodes": [{"value": "ETCVAULT::asis:plain::ETCVAULT"}, {"value": "ETCVAULT::asis:plain::ETCVAULT"}]}}`),
-			Expect: []byte(`{"node":{"nodes":[{"value":"plain"},{"value":"plain"}]}}`),
+			Expect: []byte(`{"node":{"nodes":[{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"},{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"}]}}`),
 		},
 		{
 			Name:   "nested, inside directory (node.nodes[0].nodes[0].value)",
 			Case:   []byte(`{"node": {"nodes": [{"nodes": [{"value": "ETCVAULT::asis:plain::ETCVAULT"}]}]}}`),
-			Expect: []byte(`{"node":{"nodes":[{"nodes":[{"value":"plain"}]}]}}`),
+			Expect: []byte(`{"node":{"nodes":[{"nodes":[{"_etcvault":{"container":{"Content":"plain"},"version":"asis"},"value":"plain"}]}]}}`),
 		},
 	}
 

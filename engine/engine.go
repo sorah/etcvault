@@ -35,23 +35,32 @@ func (engine *Engine) GetKeychain() *keys.Keychain {
 }
 
 func (engine *Engine) Transform(text string) (string, error) {
+	s, _, e := engine.TransformAndParse(text)
+	return s, e
+}
+
+func (engine *Engine) TransformAndParse(text string) (string, container.Container, error) {
+	// FIXME: test for this
 	rawContainer, err := container.Parse(text)
 
 	if err != nil {
 		if err == container.ErrInvalid {
-			return text, nil
+			return text, nil, nil
 		} else {
-			return "", err
+			return "", nil, err
 		}
 	}
 
 	switch c := rawContainer.(type) {
 	case *container.Plain1:
-		return engine.TransformPlain1(c)
+		result, err := engine.TransformPlain1(c)
+		return result, c, err
 	case *container.Asis:
-		return engine.TransformAsis(c)
+		result, err := engine.TransformAsis(c)
+		return result, c, err
 	case *container.V1:
-		return engine.TransformV1(c)
+		result, err := engine.TransformV1(c)
+		return result, c, err
 	}
 	// shouldnt reach
 	panic(fmt.Errorf("BUG: unsupported container type %#v", rawContainer))
