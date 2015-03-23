@@ -38,9 +38,15 @@ func (engine *Engine) transformEtcdJsonResponse0(nodePtr *map[string]interface{}
 
 	if value, ok := node["value"]; ok {
 		if str, ok := value.(string); ok {
-			newValue, err := engine.Transform(str)
+			newValue, container, err := engine.TransformAndParse(str)
 			if err == nil {
 				node["value"] = newValue
+				if container != nil {
+					node["_etcvault"] = map[string]interface{}{
+						"version":   container.Version(),
+						"container": container,
+					}
+				}
 			} else {
 				node["_etcvault_error"] = err.Error()
 			}

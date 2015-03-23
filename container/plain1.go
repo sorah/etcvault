@@ -7,7 +7,7 @@ import (
 
 type Plain1 struct {
 	KeyName string
-	Content string
+	Content string `json:"-"`
 }
 
 func ParsePlain1(str string) (*Plain1, error) {

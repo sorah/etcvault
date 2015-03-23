@@ -7,7 +7,7 @@ import (
 
 type Basic struct {
 	Version string
-	Content string
+	Content string `json:"-"`
 }
 
 func ParseBasic(str string) (*Basic, error) {
