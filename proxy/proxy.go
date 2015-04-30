@@ -100,6 +100,32 @@ func (proxy *Proxy) serveProxyRequest(response http.ResponseWriter, request *htt
 
 	var backendResponse *http.Response
 
+	var closeNotifyCh <-chan bool
+	closeNotifier, ok := response.(http.CloseNotifier)
+	if ok {
+		closeNotifyCh = closeNotifier.CloseNotify()
+	} else {
+		closeNotifyCh = make(<-chan bool)
+	}
+
+	completeCh := make(chan bool, 2)
+	closed := false
+	go func() {
+		select {
+		case <-closeNotifyCh:
+			log.Printf("Request connection closed; cancelling ongoing backend request")
+			closed = true
+			proxy.Transport.CancelRequest(backendRequest)
+		case <-completeCh:
+		}
+		if backendResponse != nil {
+			backendResponse.Body.Close()
+		}
+	}()
+	defer func() {
+		completeCh <- true
+	}()
+
 	backends := proxy.Router.ShuffledAvailableBackends()
 	for _, backend := range backends {
 		backendRequest.URL.Scheme = backend.Url.Scheme
@@ -129,6 +155,9 @@ func (proxy *Proxy) serveProxyRequest(response http.ResponseWriter, request *htt
 
 	if backendResponse.Header.Get("Content-Type") == "application/json" {
 		json, err := ioutil.ReadAll(backendResponse.Body)
+		if closed {
+			return
+		}
 		if err != nil {
 			panic(err)
 		}
